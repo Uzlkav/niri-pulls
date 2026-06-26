@@ -516,10 +516,16 @@ fn make_ipc_window(
     mapped: &Mapped,
     workspace_id: Option<WorkspaceId>,
     layout: WindowLayout,
+    existing: Option<&niri_ipc::Window>,
 ) -> niri_ipc::Window {
     with_toplevel_role(mapped.toplevel(), |role| niri_ipc::Window {
         id: mapped.id().get(),
         title: role.title.clone(),
+        initial_title: existing
+            .and_then(|w| {initial_title})
+            // .or_else(|w| role.title()),
+            // .or_else(role.title()),
+            .or_else(|w|),
         app_id: role.app_id.clone(),
         pid: mapped.credentials().map(|c| c.pid),
         workspace_id: workspace_id.map(|id| id.get()),
@@ -530,6 +536,26 @@ fn make_ipc_window(
         focus_timestamp: mapped.get_focus_timestamp().map(Timestamp::from),
     })
 }
+
+// fn _make_ipc_window_changed(
+//     mapped: &Mapped,
+//     workspace_id: Option<WorkspaceId>,
+//     layout: WindowLayout,
+// ) -> niri_ipc::Window {
+//     with_toplevel_role(mapped.toplevel(), |role| niri_ipc::Window {
+//         id: mapped.id().get(),
+//         title: role.title.clone(),
+//         initial_title: window.initial_title, // Have to figure out how to make this available
+//         app_id: role.app_id.clone(),
+//         pid: mapped.credentials().map(|c| c.pid),
+//         workspace_id: workspace_id.map(|id| id.get()),
+//         is_focused: mapped.is_focused(),
+//         is_urgent: mapped.is_urgent(),
+//         is_floating: mapped.is_floating(),
+//         layout,
+//         focus_timestamp: mapped.get_focus_timestamp().map(Timestamp::from),
+//     })
+// }
 
 impl State {
     pub fn ipc_keyboard_layouts_changed(&mut self) {
@@ -712,7 +738,7 @@ impl State {
             }
 
             let Some(ipc_win) = state.windows.get(&id) else {
-                let window = make_ipc_window(mapped, ws_id, window_layout);
+                let window = make_ipc_window(mapped, ws_id, window_layout, None);
                 events.push(Event::WindowOpenedOrChanged { window });
                 return;
             };
@@ -726,7 +752,7 @@ impl State {
             });
 
             if changed {
-                let window = make_ipc_window(mapped, ws_id, window_layout);
+                let window = make_ipc_window(mapped, ws_id, window_layout, idk_something);
                 events.push(Event::WindowOpenedOrChanged { window });
                 return;
             }
@@ -925,8 +951,6 @@ impl State {
         let Some(server) = &self.niri.ipc_server else {
             return;
         };
-        let mut state = server.event_stream_state.borrow_mut();
-
         let event = Event::ConfigLoaded { failed };
         state.apply(event.clone());
         server.send_event(event);
