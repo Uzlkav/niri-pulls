@@ -1339,6 +1339,8 @@ pub struct Window {
     pub id: u64,
     /// Title, if set.
     pub title: Option<String>,
+    /// Initial title of a window, if set.
+    pub initial_title: Option<String>,
     /// Application ID, if set.
     pub app_id: Option<String>,
     /// Process ID that created the Wayland connection for this window, if known.

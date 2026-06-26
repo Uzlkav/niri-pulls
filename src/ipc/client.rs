@@ -685,6 +685,12 @@ fn print_window(window: &Window) {
         println!("  Title: (unset)");
     }
 
+    if let Some(initial_title) = &window.title {
+        println!("  Initial Title: \"{initial_title}\"");
+    } else {
+        println!("  Initial Title: (unset)");
+    }
+
     if let Some(app_id) = &window.app_id {
         println!("  App ID: \"{app_id}\"");
     } else {
