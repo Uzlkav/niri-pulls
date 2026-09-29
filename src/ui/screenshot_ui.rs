@@ -27,6 +27,7 @@ use crate::niri_render_elements;
 use crate::render_helpers::primary_gpu_texture::PrimaryGpuTextureRenderElement;
 use crate::render_helpers::solid_color::{SolidColorBuffer, SolidColorRenderElement};
 use crate::render_helpers::texture::{TextureBuffer, TextureRenderElement};
+use crate::render_helpers::view::ViewElement;
 use crate::render_helpers::{render_to_texture, RenderTarget};
 use crate::utils::to_physical_precise_round;
 
@@ -104,9 +105,17 @@ pub struct OutputScreenshot {
 }
 
 niri_render_elements! {
+    ScreenshotChrome => {
+        Texture = PrimaryGpuTextureRenderElement,
+        ViewTexture = ViewElement<PrimaryGpuTextureRenderElement>,
+    }
+}
+
+niri_render_elements! {
     ScreenshotUiRenderElement => {
         Screenshot = PrimaryGpuTextureRenderElement,
         SolidColor = SolidColorRenderElement,
+        Chrome = ScreenshotChrome,
     }
 }
 
@@ -657,13 +666,15 @@ impl ScreenshotUi {
                 .to_f64()
                 .to_logical(scale);
 
-            let elem = PrimaryGpuTextureRenderElement(TextureRenderElement::from_texture_buffer(
-                buffer.clone(),
-                location,
-                alpha * progress,
-                None,
-                None,
-                Kind::Unspecified,
+            let elem = ScreenshotChrome::Texture(PrimaryGpuTextureRenderElement(
+                TextureRenderElement::from_texture_buffer(
+                    buffer.clone(),
+                    location,
+                    alpha * progress,
+                    None,
+                    None,
+                    Kind::Unspecified,
+                ),
             ));
             push(elem.into());
         }
