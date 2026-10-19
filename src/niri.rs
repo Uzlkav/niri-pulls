@@ -4050,10 +4050,20 @@ impl Niri {
         let tip = view.content_to_screen(pointer_pos);
         let anchor = pointer_pos.to_physical_precise_round(output_scale);
 
+        // Graphic scale: the wrapper magnifies the bitmap by the view factor; the hotspot
+        // offset is pre-scaled so the magnified tip lands on `tip` (v3 place_cursor).
+        let scale_cursor = self.config.borrow().cursor.scale_with_view;
+        let graphic_scale = if scale_cursor { view.factor } else { 1.0 };
+        let view = if scale_cursor {
+            view
+        } else {
+            OutputViewport::identity()
+        };
+
         match render_cursor {
             RenderCursor::Hidden => (),
             RenderCursor::Surface { surface, hotspot } => {
-                let offset = hotspot.to_f64();
+                let offset = hotspot.to_f64().upscale(graphic_scale);
                 let position = (tip - offset).to_physical_precise_round(output_scale);
 
                 push_elements_from_surface_tree(
@@ -4078,7 +4088,7 @@ impl Niri {
             } => {
                 let (idx, frame) = cursor.frame(self.start_time.elapsed().as_millis() as u32);
                 let hotspot = XCursor::hotspot(frame).to_logical(scale);
-                let offset = hotspot.to_f64();
+                let offset = hotspot.to_f64().upscale(graphic_scale);
                 let position = (tip - offset).to_physical_precise_round(output_scale);
 
                 let texture = self.cursor_texture_cache.get(icon, scale, &cursor, idx);
@@ -4104,7 +4114,7 @@ impl Niri {
         }
 
         if let Some(dnd_icon) = self.dnd_icon.as_ref() {
-            let offset = dnd_icon.offset.to_f64();
+            let offset = dnd_icon.offset.to_f64().upscale(graphic_scale);
             let position = (tip + offset).to_physical_precise_round(output_scale);
 
             push_elements_from_surface_tree(
